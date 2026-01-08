@@ -1,0 +1,10 @@
+------------BACKEND DEV---------
+
+1) project structure
+    controllers → business logic
+    routes → API endpoints
+    services → reusable logic (storage, auth, etc.)
+    middlewares → auth, error handling
+    config → DB, env setup
+
+2) basic backend init nodemon express cors dotenv jsonwebtoken and bcrypt
