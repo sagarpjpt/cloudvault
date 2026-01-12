@@ -1,5 +1,51 @@
 ------------BACKEND DEV---------
 
+basic db model for rough understanding
+
+┌────────────┐
+│   users    │
+│────────────│
+│ id (PK)    │◄──────────────┐
+│ email      │               │
+│ name       │               │
+└────────────┘               │
+        │                    │
+        │ owns(1:m)          │ shares with
+        ▼                    │
+┌────────────┐        ┌──────────────┐
+│  folders   │◄───────│   shares     │
+│────────────│        │──────────────│
+│ id (PK)    │        │ id (PK)      │
+│ owner_id   │        │ resource_type│
+│ parent_id  │◄──┐    │ resource_id  │
+│ name       │   │    │ grantee_user │
+└────────────┘   │    │ role         │
+        │        │    └──────────────┘
+   (1:m)|        │
+        ▼        │contains
+┌────────────┐   │
+│   files    │◄──┘
+│────────────│
+│ id (PK)    │◄──────────────┐
+│ owner_id   │               │
+│ folder_id  │               │ public access
+│ storageKey │               │
+│ version_id │               │
+└────────────┘               │
+        │                    │
+        │ has versions       │
+        ▼                    │
+┌────────────────┐    ┌────────────────┐
+│ file_versions  │    │  link_shares   │
+│────────────────│    │────────────────│
+│ id (PK)        │    │ id (PK)        │
+│ file_id (FK)   │    │ token          │
+│ version_number │    │ expires_at     │
+│ storageKey     │    │ password_hash  │
+└────────────────┘    └────────────────┘
+
+
+
 1) project structure
     controllers → business logic
     routes → API endpoints
@@ -8,3 +54,34 @@
     config → DB, env setup
 
 2) basic backend init nodemon express cors dotenv jsonwebtoken and bcrypt
+
+Client (browser)
+   |
+   | HTTP request
+   v
+Express Server
+   |
+   v
+Response
+
+3) auth setup -- reg + login + me + logout
+    Without auth → no files, no folders, no sharing.
+
+        adding route---> adding controller fn's ----> plugin routes in app
+
+        Register:
+        Client → /register
+        validate input
+        hash password
+        save in DB
+        response
+
+        Login:
+        Client → /login
+        check email
+        compare password
+        generate JWT
+        send token
+
+        me: & logout
+
