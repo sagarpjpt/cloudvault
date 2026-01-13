@@ -136,7 +136,7 @@ Response
         7.2 update createFile query in models/file.model.js
         7.3 update uploadFile controller fn in file.controller.js to save calculated checksum of file uploaded by user to files table
 
-        i calculate a SHA-256 checksum before uploading the file and store it along with metadata. This allows integrity verification and supports future features like versioning and duplicate detection.
+        i calculate a SHA-256 checksum before uploading the file and store it along with metadata. This allows integrity verification and help features like versioning and duplicate detection.
 
         Same file content → same checksum
         Different file → different checksum
@@ -152,7 +152,7 @@ Response
 
         -files table - represent logical file and file_versions shows each uplaoded version 
 
-        -How versioning logic works (CORE IDEA)
+        -How versioning logic works
         First upload
         files     → one row
         file_versions → version_number = 1
@@ -191,11 +191,9 @@ Response
 
 9) SHARING MODULE (ACL) 
 
-        1. What is sharing
+        1. sharing
         - Sharing feature allow user to share file or folder with another user.
-        - Only logged in user can share resources.
-        - Sharing is user to user, not public link.
-        - This feature is given in project document.
+        - Only logged in user can share resources & Sharing is user to user, not public link
 
         2. Shares table
         - We use one table called `shares`.
@@ -227,5 +225,10 @@ Response
         - This design is similar to google drive type system.
 
 10) stars or say favourite file/folder implementation
+        -add controller fn , models(query) and route 
+        - table in notebook
 
-        
+11) public link module
+        Public links are token-based URLs that allow access to files or folders without login. I added expiry and optional password for security.
+
+12) setting up email service for otp's verification and links 
