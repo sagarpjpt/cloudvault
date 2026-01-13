@@ -83,5 +83,149 @@ Response
         generate JWT
         send token
 
-        me: & logout
+        me: 
+        client -> /me
+        // extract token from auth headers
+        // req.user is attached
+        // me controller returns userdata
 
+4) adding folder module
+        4.1 adding folders table in postgresql
+        4.2 adding folder model in models/ --> contains query
+        4.3 folder controller logic
+        4.4 add and register route in app.js
+        4.5 api testing
+
+        Folders are user-scoped and protected by JWT. Each folder supports hierarchy using a self-referencing parent_id, which allows nested folder structures.
+
+5) adding files module only file meta data in db for now
+
+        5.1 files table creation
+        5.2 files model --> queries
+        5.3 adding files controller -- create and get files
+        5.4 add and register file routes
+        5.5 testing with postman
+
+6) file upload module
+        Client
+        → sends file (multipart/form-data)
+        → Express (Multer)
+        → Supabase Storage
+        → returns storage_key
+        → Save metadata in PostgreSQL
+        → Response to client
+
+        6.1 npm install multer @supabase/supabase-js
+        6.2 create supabase storage bucket
+        6.3 supabbase client config, add secret and url in env (Supabase URL comes from Data API, and service role key comes from API Keys section)
+        6.4 setting up multer for file uploads
+        6.5 adding uploadFile controller fn in file controller
+        6.6 add /upload route in file.routes.js file
+        6.7 test by sending post req with auth bearer and form data
+
+7) file checksum -->  (verify file integrity, detect corruption)
+
+        Client
+        → Express (multer)
+        → calculate checksum
+        → upload to Supabase
+        → save metadata + checksum in DB
+        Checksum is calculated BEFORE upload, using the file buffer.
+
+        7.1 alter files table to add checksum column
+        7.2 update createFile query in models/file.model.js
+        7.3 update uploadFile controller fn in file.controller.js to save calculated checksum of file uploaded by user to files table
+
+        i calculate a SHA-256 checksum before uploading the file and store it along with metadata. This allows integrity verification and supports future features like versioning and duplicate detection.
+
+        Same file content → same checksum
+        Different file → different checksum
+
+8) file versioning implementation
+        -One logical file → multiple historical versions
+
+        -Every overwrite creates a new version
+
+        -Old versions are preserved
+
+        -Latest version is what user normally sees
+
+        -files table - represent logical file and file_versions shows each uplaoded version 
+
+        -How versioning logic works (CORE IDEA)
+        First upload
+        files     → one row
+        file_versions → version_number = 1
+
+        Re-upload same file (overwrite)
+        files     → same row
+        file_versions → version_number = 2
+
+        8.1 create file_versions db table 
+        8.2 file_versions model queries in models/
+        8.3 updating upload logic
+                If file does not exist → create file + version 1
+
+                If file exists → add version n+1
+                
+                8.3.1 updating file.model.js queryies --adding findFile query
+
+                8.3.2 update fileUpload controller fn now 
+
+                8.3.3 getFileVersions controller fn in file.controller and create and mount route to app
+        
+        finally------>
+
+        Client uploads file
+        ↓
+        Controller checks if file exists (same name + folder)
+        ↓
+        If exists → increment version
+        Else → create new file entry
+        ↓
+        Upload file to storage
+        ↓
+        Create file_versions entry
+        ↓
+        Return success
+
+9) SHARING MODULE (ACL) 
+
+        1. What is sharing
+        - Sharing feature allow user to share file or folder with another user.
+        - Only logged in user can share resources.
+        - Sharing is user to user, not public link.
+        - This feature is given in project document.
+
+        2. Shares table
+        - We use one table called `shares`.
+        - Same table used for file and folder both.
+        - resource_type tells it is file or folder.
+        - resource_id stores id of file or folder.
+        - shared_with is user who get access.
+        - shared_by is owner of resource.
+        - role is VIEWER or EDITOR.
+
+        3. Role logic
+        - VIEWER can only view or download file.
+        - EDITOR can edit or update file or folder.
+        - Owner always have full access.
+        - Backend checks role before allowing action.
+
+        4. APIs used
+        - POST /api/shares
+        - used to share file or folder.
+        - need resourceType, resourceId, sharedWith, role.
+        - GET /api/shares/me
+        - show all files or folders shared with logged in user.
+        - All share APIs are protected by JWT.
+
+        5. Why this approach
+        - Single table makes system simple.
+        - Easy to manage permission.
+        - Same logic works for file and folder.
+        - This design is similar to google drive type system.
+
+10) stars or say favourite file/folder implementation
+
+        
