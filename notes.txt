@@ -232,3 +232,19 @@ Response
         Public links are token-based URLs that allow access to files or folders without login. I added expiry and optional password for security.
 
 12) setting up email service for otp's verification and links 
+
+        12.1 -User registers
+        -OTP is sent to email
+        -User verifies OTP
+        -email_verified = true
+        -Login allowed only if email is verified
+        
+        12.2 -Forgot password API
+        -Reset password API
+        -Secure OTP reuse (same otps table)
+        -Email flow working
+
+        12.3 -Block login if email is not verified
+        -Improve authMiddleware
+        -Send email when a file/folder is shared
+        -Small cleanup (no breaking changes)
