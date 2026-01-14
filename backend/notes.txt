@@ -245,6 +245,5 @@ Response
         -Email flow working
 
         12.3 -Block login if email is not verified
-        -Improve authMiddleware
+        -Improve authMiddleware (check email_verified)
         -Send email when a file/folder is shared
-        -Small cleanup (no breaking changes)
