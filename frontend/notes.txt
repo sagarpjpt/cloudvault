@@ -1,0 +1,17 @@
+---------FRONTEND-DEV---------
+
+1) setting nextjs and tailwind (with custom color pallete)
+    adding basic pkg - axios, framer motion, mui, react hook form....
+
+2) first creating home page with basic nav hero-section and a footer
+
+3) created /register page
+    3.1 form--> name, email, pass
+    on submit api call to /register with form data
+    3.2 on success api call --> nav to /verify-email?email=<...> page
+
+4) create /verify-email page
+    4.1 form --> otp on submit api call to /verify-email with {otp, email}
+    4.2 on success api call --> nav to /login page
+
+5)

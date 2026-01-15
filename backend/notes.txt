@@ -5,7 +5,7 @@ basic db model for rough understanding
 ┌────────────┐
 │   users    │
 │────────────│
-│ id (PK)    │◄──────────────┐
+│ id (PK)    │<──────────────┐
 │ email      │               │
 │ name       │               │
 └────────────┘               │
@@ -13,20 +13,20 @@ basic db model for rough understanding
         │ owns(1:m)          │ shares with
         ▼                    │
 ┌────────────┐        ┌──────────────┐
-│  folders   │◄───────│   shares     │
+│  folders   │<───────│   shares     │
 │────────────│        │──────────────│
 │ id (PK)    │        │ id (PK)      │
 │ owner_id   │        │ resource_type│
-│ parent_id  │◄──┐    │ resource_id  │
+│ parent_id  │<──┐    │ resource_id  │
 │ name       │   │    │ grantee_user │
 └────────────┘   │    │ role         │
         │        │    └──────────────┘
    (1:m)|        │
         ▼        │contains
 ┌────────────┐   │
-│   files    │◄──┘
+│   files    │<──┘
 │────────────│
-│ id (PK)    │◄──────────────┐
+│ id (PK)    │<──────────────┐
 │ owner_id   │               │
 │ folder_id  │               │ public access
 │ storageKey │               │
@@ -47,11 +47,11 @@ basic db model for rough understanding
 
 
 1) project structure
-    controllers → business logic
-    routes → API endpoints
-    services → reusable logic (storage, auth, etc.)
-    middlewares → auth, error handling
-    config → DB, env setup
+    controllers -> business logic
+    routes -> API endpoints
+    services -> reusable logic (storage, auth, etc.)
+    middlewares -> auth, error handling
+    config -> DB, env setup
 
 2) basic backend init nodemon express cors dotenv jsonwebtoken and bcrypt
 
@@ -65,19 +65,19 @@ Express Server
 Response
 
 3) auth setup -- reg + login + me + logout
-    Without auth → no files, no folders, no sharing.
+    Without auth -> no files, no folders, no sharing.
 
         adding route---> adding controller fn's ----> plugin routes in app
 
         Register:
-        Client → /register
+        Client -> /register
         validate input
         hash password
         save in DB
         response
 
         Login:
-        Client → /login
+        Client -> /login
         check email
         compare password
         generate JWT
@@ -108,12 +108,12 @@ Response
 
 6) file upload module
         Client
-        → sends file (multipart/form-data)
-        → Express (Multer)
-        → Supabase Storage
-        → returns storage_key
-        → Save metadata in PostgreSQL
-        → Response to client
+        -> sends file (multipart/form-data)
+        -> Express (Multer)
+        -> Supabase Storage
+        -> returns storage_key
+        -> Save metadata in PostgreSQL
+        -> Response to client
 
         6.1 npm install multer @supabase/supabase-js
         6.2 create supabase storage bucket
@@ -126,10 +126,10 @@ Response
 7) file checksum -->  (verify file integrity, detect corruption)
 
         Client
-        → Express (multer)
-        → calculate checksum
-        → upload to Supabase
-        → save metadata + checksum in DB
+        -> Express (multer)
+        -> calculate checksum
+        -> upload to Supabase
+        -> save metadata + checksum in DB
         Checksum is calculated BEFORE upload, using the file buffer.
 
         7.1 alter files table to add checksum column
@@ -138,11 +138,11 @@ Response
 
         i calculate a SHA-256 checksum before uploading the file and store it along with metadata. This allows integrity verification and help features like versioning and duplicate detection.
 
-        Same file content → same checksum
-        Different file → different checksum
+        Same file content -> same checksum
+        Different file -> different checksum
 
 8) file versioning implementation
-        -One logical file → multiple historical versions
+        -One logical file -> multiple historical versions
 
         -Every overwrite creates a new version
 
@@ -154,19 +154,19 @@ Response
 
         -How versioning logic works
         First upload
-        files     → one row
-        file_versions → version_number = 1
+        files     -> one row
+        file_versions -> version_number = 1
 
         Re-upload same file (overwrite)
-        files     → same row
-        file_versions → version_number = 2
+        files     -> same row
+        file_versions -> version_number = 2
 
         8.1 create file_versions db table 
         8.2 file_versions model queries in models/
         8.3 updating upload logic
-                If file does not exist → create file + version 1
+                If file does not exist -> create file + version 1
 
-                If file exists → add version n+1
+                If file exists -> add version n+1
                 
                 8.3.1 updating file.model.js queryies --adding findFile query
 
@@ -180,8 +180,8 @@ Response
         ↓
         Controller checks if file exists (same name + folder)
         ↓
-        If exists → increment version
-        Else → create new file entry
+        If exists -> increment version
+        Else -> create new file entry
         ↓
         Upload file to storage
         ↓
