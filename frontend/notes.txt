@@ -14,4 +14,17 @@
     4.1 form --> otp on submit api call to /verify-email with {otp, email}
     4.2 on success api call --> nav to /login page
 
-5)
+5) create /login page 
+    - email + pass form
+    - calling post /auth/login
+    - on success - store token (in ls)
+    - redirect to /
+ for now if email not verified -- cant login
+
+6) create /forgot-password
+    - enter email and onsubmit an pass reset otp sent
+ /reset-passowrd
+    - enter email otp and new password
+    - on submit with success nav to / page
+
+7) adding /lib/auth.js for route protection

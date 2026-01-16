@@ -53,6 +53,71 @@ exports.register = async (req, res) => {
   }
 };
 
+// RESEND EMAIL VERIFICATION OTP
+exports.sendOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
+      });
+    }
+
+    // 1. check user exists
+    const userResult = await userModel.findUserByEmail(email);
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const user = userResult.rows[0];
+
+    // 2. check already verified
+    if (user.email_verified) {
+      return res.status(400).json({
+        success: false,
+        message: "Email already verified",
+      });
+    }
+
+    // 3. create new OTP (old one auto-deleted inside model)
+    const otp = await createOtp({
+      userId: user.id,
+      email: user.email,
+      type: "EMAIL_VERIFY",
+    });
+
+    // 4. send email
+    await sendEmail(
+      user.email,
+      "Verify your email",
+      `
+        <p>Your verification OTP is:</p>
+        <h2>${otp}</h2>
+        <p>This OTP is valid for 10 minutes.</p>
+      `
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Verification OTP sent to email",
+    });
+
+  } catch (error) {
+    console.error("SEND OTP ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
+
+
 // VERIFY EMAIL
 exports.verifyEmail = async (req, res) => {
   try {
@@ -193,12 +258,16 @@ exports.forgotPassword = async (req, res) => {
       type: "RESET_PASSWORD",
     });
 
+    const reset_url = `${process.env.FRONTEND_URL}/reset-password?email=${email}`
+
     await sendEmail(
       user.email,
       "Reset your password",
       `
         <h2>Password Reset</h2>
-        <p>Your password reset OTP is:</p>
+        <p>Your password reset Link:</p>
+        <a href="${reset_url}"><h4>click here to reset password</h4></a>
+        <p>Your OTP:</p>
         <h1>${otp}</h1>
         <p>This OTP is valid for 10 minutes.</p>
       `
