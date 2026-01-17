@@ -15,9 +15,39 @@ import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
+import StarIcon from "@mui/icons-material/Star";
+import StarBorderIcon from "@mui/icons-material/StarBorder";
+
+import { useStarred } from "@/hooks/useStarred";
+import { starResource, unstarResource } from "@/services/star.api";
 
 export default function FolderPage() {
   const { id } = useParams();
+  const { starred } = useStarred();
+
+  const starredFileIds = new Set(
+    starred
+      .filter((item) => item.resource_type === "file")
+      .map((item) => item.resource_id)
+  );
+
+  const toggleStar = async (fileId, isStarred) => {
+    try {
+      if (isStarred) {
+        await unstarResource({
+          resourceType: "file",
+          resourceId: fileId,
+        });
+      } else {
+        await starResource({
+          resourceType: "file",
+          resourceId: fileId,
+        });
+      }
+    } catch (err) {
+      console.error("Failed to toggle star");
+    }
+  };
 
   const {
     folders,
@@ -100,19 +130,54 @@ export default function FolderPage() {
         {folderFiles.length === 0 ? (
           <p className="text-sm text-gray-500">No files in this folder</p>
         ) : (
-          <ul className="space-y-2">
-            {folderFiles.map((file) => (
-              <li
-                key={file.id}
-                className="p-3 rounded border bg-white flex justify-between"
-              >
-                <span>{file.name}</span>
-                <span className="text-xs text-gray-500">
-                  {(Number(file.size) / 1024).toFixed(1)} KB
-                </span>
-              </li>
-            ))}
-          </ul>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell width={40} />
+                <TableCell>Name</TableCell>
+                <TableCell>Type</TableCell>
+                <TableCell>Size</TableCell>
+                <TableCell>Modified</TableCell>
+              </TableRow>
+            </TableHead>
+
+            <TableBody>
+              {folderFiles.map((file) => {
+                const isStarred = starredFileIds.has(file.id);
+
+                return (
+                  <TableRow key={file.id}>
+                    <TableCell>
+                      <button onClick={() => toggleStar(file.id, isStarred)}>
+                        {isStarred ? (
+                          <StarIcon fontSize="small" />
+                        ) : (
+                          <StarBorderIcon fontSize="small" />
+                        )}
+                      </button>
+                    </TableCell>
+
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <InsertDriveFileIcon fontSize="small" />
+                        {file.name}
+                      </div>
+                    </TableCell>
+
+                    <TableCell>{file.mime_type}</TableCell>
+
+                    <TableCell>
+                      {(Number(file.size) / 1024).toFixed(1)} KB
+                    </TableCell>
+
+                    <TableCell>
+                      {new Date(file.created_at).toLocaleDateString()}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
         )}
       </section>
     </div>

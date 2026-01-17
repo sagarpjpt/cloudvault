@@ -7,6 +7,11 @@ import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
+import StarIcon from "@mui/icons-material/Star";
+import StarBorderIcon from "@mui/icons-material/StarBorder";
+
+import { useStarred } from "@/hooks/useStarred";
+import { starResource, unstarResource } from "@/services/star.api";
 
 import Link from "next/link";
 import { useFolders } from "@/hooks/useFolders";
@@ -19,6 +24,32 @@ export default function DashboardPage() {
     error: foldersError,
   } = useFolders();
   const { files, loading: filesLoading, error: filesError } = useFiles();
+
+  const { starred } = useStarred();
+
+  const starredFileIds = new Set(
+    starred
+      .filter((item) => item.resource_type === "file")
+      .map((item) => item.resource_id)
+  );
+
+  const toggleStar = async (fileId, isStarred) => {
+    try {
+      if (isStarred) {
+        await unstarResource({
+          resourceType: "file",
+          resourceId: fileId,
+        });
+      } else {
+        await starResource({
+          resourceType: "file",
+          resourceId: fileId,
+        });
+      }
+    } catch (err) {
+      console.error("Failed to toggle star");
+    }
+  };
 
   if (foldersLoading || filesLoading) {
     return <p>Loading...</p>;
@@ -68,6 +99,7 @@ export default function DashboardPage() {
           <Table size="small">
             <TableHead>
               <TableRow>
+                <TableCell />
                 <TableCell>Name</TableCell>
                 <TableCell>Type</TableCell>
                 <TableCell>Size</TableCell>
@@ -77,13 +109,43 @@ export default function DashboardPage() {
 
             <TableBody>
               {rootFiles.map((file) => (
+                // <TableRow key={file.id}>
+                //   <TableCell>
+                //     <div className="flex items-center gap-2">
+                //       <InsertDriveFileIcon fontSize="small" />
+                //       {file.name}
+                //     </div>
+                //   </TableCell>
+                //   <TableCell>{file.mime_type}</TableCell>
+                //   <TableCell>
+                //     {(Number(file.size) / 1024).toFixed(1)} KB
+                //   </TableCell>
+                //   <TableCell>
+                //     {new Date(file.created_at).toLocaleDateString()}
+                //   </TableCell>
+                // </TableRow>
                 <TableRow key={file.id}>
+                  <TableCell width={40}>
+                    <button
+                      onClick={() =>
+                        toggleStar(file.id, starredFileIds.has(file.id))
+                      }
+                    >
+                      {starredFileIds.has(file.id) ? (
+                        <StarIcon fontSize="small" />
+                      ) : (
+                        <StarBorderIcon fontSize="small" />
+                      )}
+                    </button>
+                  </TableCell>
+
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <InsertDriveFileIcon fontSize="small" />
                       {file.name}
                     </div>
                   </TableCell>
+
                   <TableCell>{file.mime_type}</TableCell>
                   <TableCell>
                     {(Number(file.size) / 1024).toFixed(1)} KB

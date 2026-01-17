@@ -68,6 +68,16 @@ export default function Navbar() {
               Features
             </Link>
             <Link
+              href="#how-it-works"
+              className={`transition ${
+                isScrolled
+                  ? "text-[var(--color-text-main)] hover:text-[var(--color-primary)]"
+                  : "text-white hover:text-gray-200"
+              }`}
+            >
+              How It Works
+            </Link>
+            <Link
               href="#pricing"
               className={`transition ${
                 isScrolled
@@ -128,6 +138,16 @@ export default function Navbar() {
               }`}
             >
               Features
+            </Link>
+            <Link
+              href="#how-it-works"
+              className={`block px-4 py-2 rounded transition ${
+                isScrolled
+                  ? "text-[var(--color-text-main)] hover:bg-[var(--color-bg)]"
+                  : "text-white hover:bg-white/10"
+              }`}
+            >
+              How It Works
             </Link>
             <Link
               href="#pricing"
