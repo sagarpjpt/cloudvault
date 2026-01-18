@@ -4,6 +4,7 @@ const fileRoutes = require('./routes/file.routes')
 const shareRoutes = require('./routes/share.routes')
 const starRoutes = require('./routes/star.routes')
 const publicLinkRoutes = require('./routes/publicLink.routes')
+const inviteRoutes = require('./routes/invite.routes')
 
 // express app config
 const express = require("express");
@@ -20,6 +21,7 @@ app.use('/api/files', fileRoutes)
 app.use('/api/shares', shareRoutes)
 app.use('/api/stars', starRoutes)
 app.use('/api/public-links', publicLinkRoutes)
+app.use('/invite', inviteRoutes)
 
 // verify server is running
 app.get("/", (req, res) => {

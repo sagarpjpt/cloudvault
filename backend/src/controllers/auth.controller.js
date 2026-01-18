@@ -1,6 +1,8 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const userModel = require("../models/user.model");
+const inviteModel = require('../models/invite.model')
+const shareModel = require('../models/share.model')
 require("dotenv").config();
 const { createOtp, verifyOtp } = require("../models/otp.model");
 const sendEmail = require("../utils/sendEmail");
@@ -24,14 +26,41 @@ exports.register = async (req, res) => {
     const result = await userModel.createUser(email, hashedPassword, name);
     const user = result.rows[0];
 
-    // create email verification OTP
+    /* =====================================================
+       AUTO-ACTIVATE PENDING SHARES (SAFE ADDITION)
+    ===================================================== */
+    const pendingInvites =
+      await inviteModel.findPendingInvitesByEmail(user.email);
+
+    for (const invite of pendingInvites.rows) {
+      try {
+        await shareModel.createShare({
+          resourceType: invite.resource_type,
+          resourceId: invite.resource_id,
+          sharedWith: user.id,
+          role: invite.role,
+          sharedBy: invite.invited_by,
+        });
+      } catch (err) {
+        // ignore duplicate share safely
+        if (err.code !== "23505") {
+          throw err;
+        }
+      }
+    }
+
+    // cleanup pending invites
+    await inviteModel.deletePendingInvitesByEmail(user.email);
+    /* ===================================================== */
+
+    // create email verification OTP (UNCHANGED)
     const otp = await createOtp({
       userId: user.id,
       email: user.email,
       type: "EMAIL_VERIFY",
     });
 
-    // send verification email
+    // send verification email (UNCHANGED)
     await sendEmail(
       user.email,
       "Verify your email address",
@@ -52,6 +81,7 @@ exports.register = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
 
 // RESEND EMAIL VERIFICATION OTP
 exports.sendOtp = async (req, res) => {

@@ -33,8 +33,29 @@ const getSharedWithUser = (userId) => {
   );
 };
 
+const createPendingShare = ({ 
+  resourceType, 
+  resourceId, 
+  email, 
+  role, 
+  invitedBy, 
+  token, 
+  expiresAt 
+}) => {
+  return pool.query(
+    `
+    INSERT INTO pending_shares
+    (resource_type, resource_id, email, role, invited_by, token, expires_at)
+    VALUES ($1,$2,$3,$4,$5,$6,$7)
+    `,
+    [resourceType, resourceId, email, role, invitedBy, token, expiresAt]
+  );
+};
+
+
 module.exports = {
   createShare,
   checkAccess,
-  getSharedWithUser
+  getSharedWithUser,
+  createPendingShare
 };
