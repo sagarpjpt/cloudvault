@@ -6,7 +6,7 @@
 ![License](https://img.shields.io/badge/license-ISC-green)
 ![Status](https://img.shields.io/badge/status-production%20ready-brightgreen)
 
-## 📸 Screenshots
+##  Screenshots
 
 ### auth
 ![Dashboard](docs/Screenshot_auth.jpg)
