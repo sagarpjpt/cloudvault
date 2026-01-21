@@ -28,3 +28,17 @@
     - on submit with success nav to / page
 
 7) adding /lib/auth.js for route protection
+
+|
+|   furhter doc later 
+|
+|
+
+---------still left to do---------
+file trash 
+renaming folders(frontend)
+sharing folder(frontend)
+versioning(frontend)
+activity log (backend + frontend)
+file preview
+public links (frontend)

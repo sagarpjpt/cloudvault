@@ -9,14 +9,14 @@ exports.starResource = async (req, res) => {
     if (!resourceType || !resourceId) {
       return res.status(400).json({
         success: false,
-        message: "Missing fields"
+        message: "Missing fields",
       });
     }
 
     if (!["file", "folder"].includes(resourceType)) {
       return res.status(400).json({
         success: false,
-        message: "Invalid resource type"
+        message: "Invalid resource type",
       });
     }
 
@@ -24,21 +24,20 @@ exports.starResource = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: "Star added"
+      message: "Star added",
     });
-
   } catch (err) {
     if (err.code === "23505") {
       return res.status(409).json({
         success: false,
-        message: "Already starred"
+        message: "Already starred",
       });
     }
 
     console.error("STAR ERROR:", err);
     res.status(500).json({
       success: false,
-      message: "Server error"
+      message: "Server error",
     });
   }
 };
@@ -53,13 +52,12 @@ exports.unstarResource = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "Star removed"
+      message: "Star removed",
     });
-
   } catch (err) {
     res.status(500).json({
       success: false,
-      message: "Server error"
+      message: "Server error",
     });
   }
 };
@@ -73,13 +71,13 @@ exports.getStarred = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: result.rows
+      data: result.rows,
     });
-
   } catch (err) {
+    console.error("GET STARRED ERROR:", err);
     res.status(500).json({
       success: false,
-      message: "Server error"
+      message: "Server error",
     });
   }
 };

@@ -16,7 +16,7 @@ export const useLogin = () => {
 
       // backend explicitly sends success + token
       if (res.success && res.token) {
-        localStorage.setItem("token", res.token);
+        localStorage.setItem("auth_token", res.token);
         return true;
       }
 

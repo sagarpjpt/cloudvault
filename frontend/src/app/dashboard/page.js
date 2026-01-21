@@ -1,21 +1,32 @@
 "use client";
 
+import { useState } from "react";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import AddIcon from "@mui/icons-material/Add";
 import FolderIcon from "@mui/icons-material/Folder";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
-import Table from "@mui/material/Table";
-import TableBody from "@mui/material/TableBody";
-import TableCell from "@mui/material/TableCell";
-import TableHead from "@mui/material/TableHead";
-import TableRow from "@mui/material/TableRow";
-import StarIcon from "@mui/icons-material/Star";
-import StarBorderIcon from "@mui/icons-material/StarBorder";
+import Button from "@mui/material/Button";
+import Box from "@mui/material/Box";
 
 import { useStarred } from "@/hooks/useStarred";
 import { starResource, unstarResource } from "@/services/star.api";
-
+import { useFileDownload } from "@/hooks/useFileDownload";
+import { deleteFile } from "@/services/file.api";
+import { useRename } from "@/hooks/useRename";
+import FileUploadDialog from "@/components/dashboard/FileUploadDialog";
+import CreateFolderDialog from "@/components/dashboard/CreateFolderDialog";
+import ShareDialog from "@/components/dashboard/ShareDialog";
+import StorageUsage from "@/components/dashboard/StorageUsage";
+import FilePreview from "@/components/dashboard/FilePreview";
+import { RenameDialog } from "@/components/common/RenameDialog";
+import FolderCard from "@/components/dashboard/FolderCard";
+import FileCard from "@/components/dashboard/FileCard";
+import ActionMenu from "@/components/dashboard/ActionMenu";
+import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import Link from "next/link";
 import { useFolders } from "@/hooks/useFolders";
 import { useFiles } from "@/hooks/useFiles";
+import toast from "react-hot-toast";
 
 export default function DashboardPage() {
   const {
@@ -26,11 +37,21 @@ export default function DashboardPage() {
   const { files, loading: filesLoading, error: filesError } = useFiles();
 
   const { starred } = useStarred();
+  const { download, downloading } = useFileDownload();
+  const { isRenaming, renameFile: renameFileHandler } = useRename();
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [createFolderDialogOpen, setCreateFolderDialogOpen] = useState(false);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [selectedShareFile, setSelectedShareFile] = useState(null);
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+  const [renameItem, setRenameItem] = useState(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewFile, setPreviewFile] = useState(null);
 
   const starredFileIds = new Set(
     starred
       .filter((item) => item.resource_type === "file")
-      .map((item) => item.resource_id)
+      .map((item) => item.resource_id),
   );
 
   const toggleStar = async (fileId, isStarred) => {
@@ -40,125 +61,273 @@ export default function DashboardPage() {
           resourceType: "file",
           resourceId: fileId,
         });
+        toast.success("Removed from starred");
       } else {
         await starResource({
           resourceType: "file",
           resourceId: fileId,
         });
+        toast.success("Added to starred");
       }
     } catch (err) {
-      console.error("Failed to toggle star");
+      console.error("Failed to toggle star", err);
+      toast.error("Failed to toggle star");
+    }
+  };
+
+  const handleDelete = async (fileId, fileName) => {
+    if (confirm(`Delete "${fileName}"?`)) {
+      try {
+        await deleteFile(fileId);
+        toast.success("File deleted");
+        // Refresh files list
+        window.location.reload();
+      } catch (err) {
+        toast.error("Failed to delete file");
+      }
+    }
+  };
+
+  const handleShareClick = (file) => {
+    setSelectedShareFile(file);
+    setShareDialogOpen(true);
+  };
+
+  const handleRenameClick = (file) => {
+    setRenameItem({ id: file.id, name: file.name, type: "file" });
+    setRenameDialogOpen(true);
+  };
+
+  const handleRenameConfirm = async (newName) => {
+    if (!renameItem) return;
+
+    const success = await renameFileHandler(renameItem.id, newName);
+    if (success) {
+      setRenameDialogOpen(false);
+      setTimeout(() => window.location.reload(), 600);
+    }
+  };
+
+  const handleUploadSuccess = () => {
+    // Refresh files list
+    window.location.reload();
+  };
+
+  const canPreview = (mimeType) => {
+    return (
+      mimeType.startsWith("image/") ||
+      mimeType === "application/pdf" ||
+      mimeType.startsWith("text/") ||
+      mimeType === "application/json"
+    );
+  };
+
+  const handlePreviewClick = (file) => {
+    if (canPreview(file.mime_type)) {
+      setPreviewFile(file);
+      setPreviewOpen(true);
+    } else {
+      toast.error("File type not supported for preview");
     }
   };
 
   if (foldersLoading || filesLoading) {
-    return <p>Loading...</p>;
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <div
+            className="w-12 h-12 border-4 rounded-full animate-spin mx-auto mb-4"
+            style={{
+              borderColor: "var(--color-border)",
+              borderTopColor: "var(--color-primary)",
+            }}
+          />
+          <p style={{ color: "var(--color-text-muted)" }}>Loading...</p>
+        </div>
+      </div>
+    );
   }
 
   if (foldersError || filesError) {
-    return <p>Failed to load data</p>;
+    return (
+      <div className="flex items-center justify-center h-96">
+        <p style={{ color: "#d32f2f" }}>Failed to load data</p>
+      </div>
+    );
   }
 
   const rootFolders = folders.filter((folder) => folder.parent_id === null);
-
   const rootFiles = files.filter((file) => file.folder_id === null);
 
   return (
-    <div>
-      <h1 className="text-xl font-semibold mb-6">My Files</h1>
+    <div className="max-w-7xl mx-auto">
+      {/* Storage Usage */}
+      <StorageUsage />
 
-      {/* FOLDERS GRID */}
-      <section className="mb-10">
-        <h2 className="text-sm font-medium mb-3 text-gray-600">Folders</h2>
+      {/* Header with Action Buttons */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <h1
+          className="text-2xl md:text-3xl font-bold"
+          style={{ color: "var(--color-primary)" }}
+        >
+          My Files
+        </h1>
+        <div className="flex gap-2 w-full md:w-auto">
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setCreateFolderDialogOpen(true)}
+            sx={{
+              backgroundColor: "var(--color-primary)",
+              "&:hover": {
+                backgroundColor: "var(--color-primary-hover)",
+              },
+              flex: 1,
+              md: { flex: "none" },
+            }}
+          >
+            <span className="hidden sm:inline">New Folder</span>
+            <span className="sm:hidden">Folder</span>
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<CloudUploadIcon />}
+            onClick={() => setUploadDialogOpen(true)}
+            sx={{
+              backgroundColor: "var(--color-primary)",
+              "&:hover": {
+                backgroundColor: "var(--color-primary-hover)",
+              },
+              flex: 1,
+              md: { flex: "none" },
+            }}
+          >
+            <span className="hidden sm:inline">Upload File</span>
+            <span className="sm:hidden">Upload</span>
+          </Button>
+        </div>
+      </div>
 
-        {rootFolders.length === 0 ? (
-          <p className="text-sm text-gray-500">No folders</p>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* FOLDERS SECTION */}
+      {rootFolders.length > 0 && (
+        <section className="mb-10">
+          <div className="flex items-center gap-2 mb-4">
+            <FolderIcon sx={{ color: "var(--color-primary)", fontSize: 24 }} />
+            <h2
+              className="text-lg font-semibold"
+              style={{ color: "var(--color-primary)" }}
+            >
+              Folders ({rootFolders.length})
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {rootFolders.map((folder) => (
-              <Link
-                key={folder.id}
-                href={`/dashboard/folder/${folder.id}`}
-                className="border rounded p-4 bg-white hover:shadow"
-              >
-                <FolderIcon fontSize="large" />
-                <p className="mt-2 font-medium">{folder.name}</p>
-              </Link>
+              <FolderCard key={folder.id} folder={folder} />
             ))}
           </div>
-        )}
-      </section>
+        </section>
+      )}
 
-      {/* FILES TABLE */}
-      <section>
-        <h2 className="text-sm font-medium mb-3 text-gray-600">Files</h2>
+      {/* FILES SECTION */}
+      {rootFiles.length > 0 && (
+        <section>
+          <div className="flex items-center gap-2 mb-4">
+            <InsertDriveFileIcon
+              sx={{ color: "var(--color-primary)", fontSize: 24 }}
+            />
+            <h2
+              className="text-lg font-semibold"
+              style={{ color: "var(--color-primary)" }}
+            >
+              Files ({rootFiles.length})
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {rootFiles.map((file) => (
+              <FileCard
+                key={file.id}
+                file={file}
+                isStarred={starredFileIds.has(file.id)}
+                onToggleStar={() =>
+                  toggleStar(file.id, starredFileIds.has(file.id))
+                }
+                onDownload={() => download(file.id, file.name)}
+                onPreview={() => handlePreviewClick(file)}
+                onRename={() => handleRenameClick(file)}
+                onShare={() => handleShareClick(file)}
+                onDelete={() => handleDelete(file.id, file.name)}
+                downloading={downloading}
+                canPreview={canPreview(file.mime_type)}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
-        {rootFiles.length === 0 ? (
-          <p className="text-sm text-gray-500">No files</p>
-        ) : (
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell />
-                <TableCell>Name</TableCell>
-                <TableCell>Type</TableCell>
-                <TableCell>Size</TableCell>
-                <TableCell>Modified</TableCell>
-              </TableRow>
-            </TableHead>
+      {rootFolders.length === 0 && rootFiles.length === 0 && (
+        <div className="text-center py-12">
+          <HourglassEmptyIcon className="!text-5xl !mb-4" />
+          <p
+            className="text-lg font-medium"
+            style={{ color: "var(--color-text-muted)" }}
+          >
+            No files or folders yet. Start by uploading a file or creating a
+            folder!
+          </p>
+        </div>
+      )}
 
-            <TableBody>
-              {rootFiles.map((file) => (
-                // <TableRow key={file.id}>
-                //   <TableCell>
-                //     <div className="flex items-center gap-2">
-                //       <InsertDriveFileIcon fontSize="small" />
-                //       {file.name}
-                //     </div>
-                //   </TableCell>
-                //   <TableCell>{file.mime_type}</TableCell>
-                //   <TableCell>
-                //     {(Number(file.size) / 1024).toFixed(1)} KB
-                //   </TableCell>
-                //   <TableCell>
-                //     {new Date(file.created_at).toLocaleDateString()}
-                //   </TableCell>
-                // </TableRow>
-                <TableRow key={file.id}>
-                  <TableCell width={40}>
-                    <button
-                      onClick={() =>
-                        toggleStar(file.id, starredFileIds.has(file.id))
-                      }
-                    >
-                      {starredFileIds.has(file.id) ? (
-                        <StarIcon fontSize="small" />
-                      ) : (
-                        <StarBorderIcon fontSize="small" />
-                      )}
-                    </button>
-                  </TableCell>
+      {/* Dialogs */}
+      <FileUploadDialog
+        open={uploadDialogOpen}
+        onClose={() => setUploadDialogOpen(false)}
+        onUploadSuccess={handleUploadSuccess}
+      />
 
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <InsertDriveFileIcon fontSize="small" />
-                      {file.name}
-                    </div>
-                  </TableCell>
+      <CreateFolderDialog
+        open={createFolderDialogOpen}
+        onClose={() => setCreateFolderDialogOpen(false)}
+        onSuccess={handleUploadSuccess}
+      />
 
-                  <TableCell>{file.mime_type}</TableCell>
-                  <TableCell>
-                    {(Number(file.size) / 1024).toFixed(1)} KB
-                  </TableCell>
-                  <TableCell>
-                    {new Date(file.created_at).toLocaleDateString()}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </section>
+      <ShareDialog
+        open={shareDialogOpen}
+        onClose={() => {
+          setShareDialogOpen(false);
+          setSelectedShareFile(null);
+        }}
+        resourceType="file"
+        resourceId={selectedShareFile?.id}
+        resourceName={selectedShareFile?.name}
+        onShareSuccess={() => {
+          toast.success("Share invitation sent!");
+        }}
+      />
+
+      <RenameDialog
+        open={renameDialogOpen}
+        title={`Rename ${renameItem?.type === "file" ? "File" : "Folder"}`}
+        currentName={renameItem?.name || ""}
+        onConfirm={handleRenameConfirm}
+        onCancel={() => setRenameDialogOpen(false)}
+        isLoading={isRenaming}
+      />
+
+      {/* File Preview Dialog */}
+      {previewFile && (
+        <FilePreview
+          open={previewOpen}
+          onClose={() => {
+            setPreviewOpen(false);
+            setPreviewFile(null);
+          }}
+          fileId={previewFile.id}
+          fileName={previewFile.name}
+          mimeType={previewFile.mime_type}
+        />
+      )}
     </div>
   );
 }
+
+// export default DashboardPage;

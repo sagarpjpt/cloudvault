@@ -5,7 +5,7 @@ const addStar = ({ userId, resourceType, resourceId }) => {
   return pool.query(
     `INSERT INTO stars (user_id, resource_type, resource_id)
      VALUES ($1, $2, $3)`,
-    [userId, resourceType, resourceId]
+    [userId, resourceType, resourceId],
   );
 };
 
@@ -14,7 +14,7 @@ const removeStar = ({ userId, resourceType, resourceId }) => {
   return pool.query(
     `DELETE FROM stars
      WHERE user_id = $1 AND resource_type = $2 AND resource_id = $3`,
-    [userId, resourceType, resourceId]
+    [userId, resourceType, resourceId],
   );
 };
 
@@ -25,12 +25,21 @@ const getStarred = (userId) => {
      FROM stars
      WHERE user_id = $1
      ORDER BY created_at DESC`,
-    [userId]
+    [userId],
+  );
+};
+
+// remove all stars for a resource (used when resource is deleted)
+const removeStarByResource = ({ resourceType, resourceId }) => {
+  return pool.query(
+    `DELETE FROM stars WHERE resource_type = $1 AND resource_id = $2`,
+    [resourceType, resourceId],
   );
 };
 
 module.exports = {
   addStar,
   removeStar,
-  getStarred
+  getStarred,
+  removeStarByResource,
 };
