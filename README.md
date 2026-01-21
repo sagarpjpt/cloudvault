@@ -6,6 +6,26 @@
 ![License](https://img.shields.io/badge/license-ISC-green)
 ![Status](https://img.shields.io/badge/status-production%20ready-brightgreen)
 
+## 📸 Screenshots
+
+### auth
+![Dashboard](docs/Screenshot_auth.jpg)
+
+### Landing Page
+![Dashboard](docs/Screenshot_home.jpg)
+
+### Dashboard
+![Dashboard](docs/Screenshot_dashboard.jpg)
+
+### DB-1
+![Users Table](docs/DB-1.jpeg)
+
+### DB-2
+![Users Table](docs/DB-2.jpeg)
+
+### DB-3
+![Users Table](docs/DB-3.jpeg)
+
 ##  Features
 
 ### Core Features
@@ -60,7 +80,6 @@
 
 - Node.js 16+ (LTS recommended)
 - PostgreSQL 12+
-- npm or yarn
 - Git
 
 ### Installation
@@ -102,7 +121,7 @@ npm run dev
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:4000
 
-## 📋 Environment Variables
+##  Environment Variables
 
 ### Backend (.env)
 
@@ -193,14 +212,14 @@ GET    /api/stars                  # Get starred items
 
 ##  Security Features
 
-- ✅ JWT-based authentication with expiry
-- ✅ Password hashing with bcrypt (12 rounds)
-- ✅ CORS configured and enforced
-- ✅ Role-based access control (RBAC)
-- ✅ SQL injection prevention (parameterized queries)
-- ✅ Email verification required
-- ✅ Secure file upload validation
-- ✅ Automatic logout on 401 errors
+-  JWT-based authentication with expiry
+-  Password hashing with bcrypt (12 rounds)
+-  CORS configured and enforced
+-  Role-based access control (RBAC)
+-  SQL injection prevention (parameterized queries)
+-  Email verification required
+-  Secure file upload validation
+-  Automatic logout on 401 errors
 
 ##  Database Schema
 
@@ -237,12 +256,12 @@ See [TESTING_CHECKLIST.md](./TESTING_CHECKLIST.md) for comprehensive testing gui
 
 ### Test Coverage
 
-- ✅ 13 features fully implemented
-- ✅ 25+ API endpoints
-- ✅ 30+ UI components
-- ✅ Full CRUD operations
-- ✅ Permission enforcement
-- ✅ Error handling
+-  13 features fully implemented
+-  25+ API endpoints
+-  30+ UI components
+-  Full CRUD operations
+-  Permission enforcement
+-  Error handling
 
 ##  Deployment
 
@@ -312,6 +331,5 @@ For support, email your-email@example.com or open an issue on GitHub.
 
 ---
 
-**Status**:  Production Ready  
-**Last Updated**: January 19, 2026  
+**Last Updated**: January 21, 2026  
 **Version**: 1.0.0

@@ -172,7 +172,7 @@ export default function DashboardPage() {
         >
           My Files
         </h1>
-        <div className="flex gap-2 w-full md:w-auto">
+        <div className="flex gap-2 w-full md:w-80">
           <Button
             variant="contained"
             startIcon={<AddIcon />}
