@@ -1,5 +1,5 @@
 const pool = require("../config/db");
-
+const supabase = require("../config/supabase");
 // create a folder
 const createFolder = (name, ownerId, parentId = null) => {
   return pool.query(
@@ -126,25 +126,83 @@ const restoreFolder = (folderId) => {
 };
 
 // permanently delete folder and all its contents
+// const permanentlyDeleteFolder = async (folderId) => {
+//   // First get all subfolders recursively and delete them
+//   const deleteSubfolders = async (parentId) => {
+//     const result = await pool.query(
+//       `SELECT id FROM folders WHERE parent_id = $1`,
+//       [parentId],
+//     );
+//     for (const folder of result.rows) {
+//       await deleteSubfolders(folder.id);
+//     }
+//   };
+
+//   await deleteSubfolders(folderId);
+
+//   // Delete all files in folder
+//   await pool.query(`DELETE FROM files WHERE folder_id = $1`, [folderId]);
+
+//   // Delete the folder itself
+//   return pool.query(`DELETE FROM folders WHERE id = $1`, [folderId]);
+// };
 const permanentlyDeleteFolder = async (folderId) => {
-  // First get all subfolders recursively and delete them
-  const deleteSubfolders = async (parentId) => {
-    const result = await pool.query(
-      `SELECT id FROM folders WHERE parent_id = $1`,
-      [parentId],
-    );
-    for (const folder of result.rows) {
-      await deleteSubfolders(folder.id);
-    }
-  };
+  // 1. get all nested folders
+  const subfolderIds = await getAllSubfolderIds(folderId);
+  const allFolderIds = [folderId, ...subfolderIds];
 
-  await deleteSubfolders(folderId);
+  // 2. get all files inside all folders
+  const filesResult = await pool.query(
+    `
+    SELECT id, storage_key
+    FROM files
+    WHERE folder_id = ANY($1)
+    `,
+    [allFolderIds],
+  );
 
-  // Delete all files in folder
-  await pool.query(`DELETE FROM files WHERE folder_id = $1`, [folderId]);
+  // 3. delete from storage
+  await deleteFilesFromStorage(filesResult.rows);
 
-  // Delete the folder itself
-  return pool.query(`DELETE FROM folders WHERE id = $1`, [folderId]);
+  // 4. delete files from DB
+  await pool.query(`DELETE FROM files WHERE folder_id = ANY($1)`, [
+    allFolderIds,
+  ]);
+
+  // 5. delete folders (children first is already handled)
+  await pool.query(`DELETE FROM folders WHERE id = ANY($1)`, [allFolderIds]);
+};
+
+// get all subfolders
+const getAllSubfolderIds = async (folderId, ids = []) => {
+  const result = await pool.query(
+    `SELECT id FROM folders WHERE parent_id = $1`,
+    [folderId],
+  );
+
+  for (const row of result.rows) {
+    ids.push(row.id);
+    await getAllSubfolderIds(row.id, ids);
+  }
+
+  return ids;
+};
+
+// delete files from supabase
+const deleteFilesFromStorage = async (files) => {
+  const keys = files.map((f) => f.storage_key);
+
+  if (keys.length === 0) return;
+
+  // Delete from storage bucket
+  const { data, error } = await supabase.storage
+    .from("cloud-vault-media-files")
+    .remove(keys);
+
+  if (error) {
+    console.error("Storage deletion failed:", error);
+    throw error;
+  }
 };
 
 module.exports = {

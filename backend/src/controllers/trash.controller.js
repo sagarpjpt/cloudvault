@@ -1,5 +1,6 @@
 const fileModel = require("../models/file.model");
 const folderModel = require("../models/folder.model");
+const supabase = require("../config/supabase");
 
 // GET ALL TRASH ITEMS (deleted files and folders)
 exports.getTrash = async (req, res) => {
@@ -35,7 +36,7 @@ exports.restoreFile = async (req, res) => {
 
     // Check if file exists in trash
     const fileResult = await fileModel.getUserTrashFiles(userId);
-    const trashedFile = fileResult.rows.find((f) => f.id === parseInt(fileId));
+    const trashedFile = fileResult.rows.find((f) => f.id === fileId);
 
     if (!trashedFile) {
       return res.status(404).json({
@@ -68,9 +69,7 @@ exports.restoreFolder = async (req, res) => {
 
     // Check if folder exists in trash
     const foldersResult = await folderModel.getUserTrashFolders(userId);
-    const trashedFolder = foldersResult.rows.find(
-      (f) => f.id === parseInt(folderId),
-    );
+    const trashedFolder = foldersResult.rows.find((f) => f.id === folderId);
 
     if (!trashedFolder) {
       return res.status(404).json({
@@ -103,7 +102,7 @@ exports.permanentlyDeleteFile = async (req, res) => {
 
     // Check if file exists in trash
     const fileResult = await fileModel.getUserTrashFiles(userId);
-    const trashedFile = fileResult.rows.find((f) => f.id === parseInt(fileId));
+    const trashedFile = fileResult.rows.find((f) => f.id === fileId);
 
     if (!trashedFile) {
       return res.status(404).json({
@@ -112,7 +111,27 @@ exports.permanentlyDeleteFile = async (req, res) => {
       });
     }
 
-    // Permanently delete
+    // Delete from storage bucket
+    const storageKey = trashedFile.storage_key;
+    if (!storageKey || typeof storageKey !== "string") {
+      return res.status(500).json({
+        success: false,
+        message: "Invalid storage key",
+      });
+    }
+    const { data, error } = await supabase.storage
+      .from("cloud-vault-media-files")
+      .remove([storageKey]);
+
+    if (error) {
+      console.error("Storage delete failed:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Storage delete failed",
+      });
+    }
+
+    // Permanently delete db row
     await fileModel.permanentlyDeleteFile(fileId);
 
     res.status(200).json({
@@ -136,9 +155,7 @@ exports.permanentlyDeleteFolder = async (req, res) => {
 
     // Check if folder exists in trash
     const foldersResult = await folderModel.getUserTrashFolders(userId);
-    const trashedFolder = foldersResult.rows.find(
-      (f) => f.id === parseInt(folderId),
-    );
+    const trashedFolder = foldersResult.rows.find((f) => f.id === folderId);
 
     if (!trashedFolder) {
       return res.status(404).json({
@@ -168,18 +185,30 @@ exports.emptyTrash = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // Get all trash items for this user
     const [trashFilesResult, trashFoldersResult] = await Promise.all([
       fileModel.getUserTrashFiles(userId),
       folderModel.getUserTrashFolders(userId),
     ]);
 
-    // Delete all trash files
+    // delete standalone trash files
     for (const file of trashFilesResult.rows) {
+      const storageKey = file.storage_key;
+
+      if (typeof storageKey === "string" && storageKey.length > 0) {
+        const { error } = await supabase.storage
+          .from("cloud-vault-media-files")
+          .remove([storageKey]);
+
+        if (error) {
+          console.error("Storage delete failed:", error);
+          throw error;
+        }
+      }
+      // delete db row - file meta data
       await fileModel.permanentlyDeleteFile(file.id);
     }
 
-    // Delete all trash folders
+    // delete trash folders (handles nested files internally)
     for (const folder of trashFoldersResult.rows) {
       await folderModel.permanentlyDeleteFolder(folder.id);
     }

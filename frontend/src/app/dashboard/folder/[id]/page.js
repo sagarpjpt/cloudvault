@@ -210,7 +210,7 @@ export default function FolderPage() {
       <FolderBreadcrumb breadcrumbs={breadcrumbs} />
 
       {/* HEADER WITH BUTTONS */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center my-8 gap-4">
         <div className="flex items-center gap-2">
           <FolderIcon sx={{ fontSize: 32, color: "var(--color-primary)" }} />
           <h1
@@ -220,7 +220,7 @@ export default function FolderPage() {
             {breadcrumbs[breadcrumbs.length - 1]?.name || "Folder"}
           </h1>
         </div>
-        <div className="flex gap-2 w-full md:w-auto">
+        <div className="flex gap-2 w-full md:w-80">
           <Button
             variant="contained"
             startIcon={<AddIcon />}

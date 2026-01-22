@@ -111,7 +111,7 @@ const getUserStorageUsage = (ownerId) => {
 // get user trash files
 const getUserTrashFiles = (ownerId) => {
   return pool.query(
-    `SELECT id, name, mime_type, size, folder_id, created_at
+    `SELECT id, name, mime_type, size, folder_id, storage_key, created_at
      FROM files
      WHERE owner_id = $1 AND is_deleted = true
      ORDER BY created_at DESC`,
