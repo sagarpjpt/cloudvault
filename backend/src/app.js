@@ -6,6 +6,7 @@ const starRoutes = require("./routes/star.routes");
 const publicLinkRoutes = require("./routes/publicLink.routes");
 const inviteRoutes = require("./routes/invite.routes");
 const searchRoutes = require("./routes/search.routes");
+const trashRoutes = require("./routes/trash.routes");
 
 // express app config
 const express = require("express");
@@ -23,6 +24,7 @@ app.use("/api/shares", shareRoutes);
 app.use("/api/stars", starRoutes);
 app.use("/api/public-links", publicLinkRoutes);
 app.use("/api/search", searchRoutes);
+app.use("/api/trash", trashRoutes);
 app.use("/invite", inviteRoutes);
 
 // verify server is running

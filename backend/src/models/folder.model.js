@@ -55,6 +55,35 @@ const softDeleteFolder = (folderId) => {
   ]);
 };
 
+// soft delete folder and all its contents recursively
+const softDeleteFolderRecursive = async (folderId) => {
+  try {
+    // First, soft delete all subfolders recursively
+    const subfolders = await pool.query(
+      `SELECT id FROM folders WHERE parent_id = $1`,
+      [folderId],
+    );
+
+    for (const subfolder of subfolders.rows) {
+      await softDeleteFolderRecursive(subfolder.id);
+    }
+
+    // Soft delete all files in this folder
+    await pool.query(
+      `UPDATE files SET is_deleted = true WHERE folder_id = $1`,
+      [folderId],
+    );
+
+    // Soft delete the folder itself
+    return await pool.query(
+      `UPDATE folders SET is_deleted = true WHERE id = $1`,
+      [folderId],
+    );
+  } catch (err) {
+    throw err;
+  }
+};
+
 // search folders by name for a user
 const searchFolders = (ownerId, searchTerm) => {
   return pool.query(
@@ -77,6 +106,47 @@ const updateFolderName = (folderId, newName) => {
   );
 };
 
+// get user trash folders
+const getUserTrashFolders = (ownerId) => {
+  return pool.query(
+    `SELECT id, name, parent_id, created_at
+     FROM folders
+     WHERE owner_id = $1 AND is_deleted = true
+     ORDER BY created_at DESC`,
+    [ownerId],
+  );
+};
+
+// restore folder from trash
+const restoreFolder = (folderId) => {
+  return pool.query(
+    `UPDATE folders SET is_deleted = false WHERE id = $1 RETURNING *`,
+    [folderId],
+  );
+};
+
+// permanently delete folder and all its contents
+const permanentlyDeleteFolder = async (folderId) => {
+  // First get all subfolders recursively and delete them
+  const deleteSubfolders = async (parentId) => {
+    const result = await pool.query(
+      `SELECT id FROM folders WHERE parent_id = $1`,
+      [parentId],
+    );
+    for (const folder of result.rows) {
+      await deleteSubfolders(folder.id);
+    }
+  };
+
+  await deleteSubfolders(folderId);
+
+  // Delete all files in folder
+  await pool.query(`DELETE FROM files WHERE folder_id = $1`, [folderId]);
+
+  // Delete the folder itself
+  return pool.query(`DELETE FROM folders WHERE id = $1`, [folderId]);
+};
+
 module.exports = {
   createFolder,
   getUserFolders,
@@ -84,6 +154,10 @@ module.exports = {
   findFolder,
   getSubfolders,
   softDeleteFolder,
+  softDeleteFolderRecursive,
   searchFolders,
   updateFolderName,
+  getUserTrashFolders,
+  restoreFolder,
+  permanentlyDeleteFolder,
 };

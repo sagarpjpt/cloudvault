@@ -134,8 +134,8 @@ exports.deleteFolder = async (req, res) => {
       console.error("Error removing stars:", err);
     }
 
-    // Soft delete
-    await folderModel.softDeleteFolder(folderId);
+    // Soft delete folder and all its contents recursively
+    await folderModel.softDeleteFolderRecursive(folderId);
 
     res.status(200).json({
       success: true,

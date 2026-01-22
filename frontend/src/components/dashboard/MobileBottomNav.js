@@ -6,6 +6,7 @@ import { useState } from "react";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import SharedIcon from "@mui/icons-material/FolderShared";
 import StarIcon from "@mui/icons-material/Star";
+import DeleteIcon from "@mui/icons-material/Delete";
 import LogoutIcon from "@mui/icons-material/Logout";
 
 export default function MobileBottomNav() {
@@ -24,6 +25,7 @@ export default function MobileBottomNav() {
     { href: "/dashboard", label: "Files", icon: DashboardIcon },
     { href: "/dashboard/shared", label: "Shared", icon: SharedIcon },
     { href: "/dashboard/starred", label: "Starred", icon: StarIcon },
+    { href: "/trash", label: "Trash", icon: DeleteIcon },
   ];
 
   return (

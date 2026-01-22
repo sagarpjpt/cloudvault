@@ -8,6 +8,7 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 import FolderSharedIcon from "@mui/icons-material/FolderShared";
 import StarIcon from "@mui/icons-material/Star";
+import DeleteIcon from "@mui/icons-material/Delete";
 import SearchBar from "./SearchBar";
 import SearchResults from "./SearchResults";
 import { useSearch } from "@/hooks/useSearch";
@@ -52,6 +53,7 @@ export default function Sidebar() {
       icon: FolderSharedIcon,
     },
     { href: "/dashboard/starred", label: "Starred", icon: StarIcon },
+    { href: "/trash", label: "Trash", icon: DeleteIcon },
   ];
 
   return (

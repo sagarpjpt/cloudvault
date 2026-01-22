@@ -108,6 +108,30 @@ const getUserStorageUsage = (ownerId) => {
   );
 };
 
+// get user trash files
+const getUserTrashFiles = (ownerId) => {
+  return pool.query(
+    `SELECT id, name, mime_type, size, folder_id, created_at
+     FROM files
+     WHERE owner_id = $1 AND is_deleted = true
+     ORDER BY created_at DESC`,
+    [ownerId],
+  );
+};
+
+// restore file from trash
+const restoreFile = (fileId) => {
+  return pool.query(
+    `UPDATE files SET is_deleted = false WHERE id = $1 RETURNING *`,
+    [fileId],
+  );
+};
+
+// permanently delete file
+const permanentlyDeleteFile = (fileId) => {
+  return pool.query(`DELETE FROM files WHERE id = $1`, [fileId]);
+};
+
 module.exports = {
   createFile,
   getUserFiles,
@@ -119,4 +143,7 @@ module.exports = {
   searchFiles,
   updateFileName,
   getUserStorageUsage,
+  getUserTrashFiles,
+  restoreFile,
+  permanentlyDeleteFile,
 };
