@@ -238,86 +238,6 @@ All tables include:
 - `updated_at` - Last modification timestamp
 - `is_deleted` - Soft delete flag
 
-##  Testing
-
-### Run Tests
-
-```bash
-cd backend
-npm test
-
-cd frontend
-npm test
-```
-
-### Manual Testing Checklist
-
-See [TESTING_CHECKLIST.md](./TESTING_CHECKLIST.md) for comprehensive testing guide
-
-### Test Coverage
-
--  13 features fully implemented
--  25+ API endpoints
--  30+ UI components
--  Full CRUD operations
--  Permission enforcement
--  Error handling
-
-##  Deployment
-
-### Production Build
-
-```bash
-# Frontend
-cd frontend
-npm run build
-
-# Backend requires no build
-cd backend
-npm install --production
-```
-
-### Deployment Options
-
-1. **Vercel** (Frontend recommended)
-   - Connect GitHub repository
-   - Set environment variables
-   - Auto-deploy on push
-
-2. **Heroku** (Backend)
-   - Use PostgreSQL add-on
-   - Configure Supabase storage
-   - Set environment variables
-
-3. **Docker** (Both)
-   - See Dockerfile for containerization
-   - Use docker-compose for local development
-
-See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for detailed instructions
-
-##  Performance
-
-- **Dashboard Load**: < 2 seconds
-- **Search Debounce**: 300ms
-- **File Upload**: Progress tracking in real-time
-- **Database Queries**: Optimized with indexes
-- **Frontend Bundle**: Optimized with Next.js
-
-##  Known Issues
-
-None currently identified. See [TEST_REPORT.md](./TEST_REPORT.md) for test results.
-
-##  License
-This project is licensed under the ISC License.
-
-##  Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
 ##  Support
 
 For support, email sagarprjpt99@gmail.com or open an issue on GitHub.
@@ -331,5 +251,5 @@ For support, email sagarprjpt99@gmail.com or open an issue on GitHub.
 
 ---
 
-**Last Updated**: January 21, 2026  
-**Version**: 1.0.0
+<!-- **Last Updated**: January 22, 2026  
+**Version**: 1.0.0 -->
