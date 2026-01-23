@@ -33,6 +33,14 @@ app.use("/api/public-links", publicLinkRoutes);
 app.use("/api/search", searchRoutes);
 app.use("/api/trash", trashRoutes);
 app.use("/invite", inviteRoutes);
+app.use('/api/debug-env', async (req, res) => {
+    res.json({
+        hasVariable: !!process.env.DATABASE_URL,
+        urlLength: process.env.DATABASE_URL?.length || 0,
+        urlPreview: process.env.DATABASE_URL?.substring(0, 60) + '...',
+        allKeys: Object.keys(process.env).filter(k => k.includes('DATABASE'))
+    });
+})
 
 // verify server is running
 app.get("/", (req, res) => {

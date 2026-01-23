@@ -1,8 +1,8 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const userModel = require("../models/user.model");
-const inviteModel = require('../models/invite.model')
-const shareModel = require('../models/share.model')
+const inviteModel = require("../models/invite.model");
+const shareModel = require("../models/share.model");
 require("dotenv").config();
 const { createOtp, verifyOtp } = require("../models/otp.model");
 const sendEmail = require("../utils/sendEmail");
@@ -26,11 +26,12 @@ exports.register = async (req, res) => {
     const result = await userModel.createUser(email, hashedPassword, name);
     const user = result.rows[0];
 
-    /* =====================================================
+    /*  
        AUTO-ACTIVATE PENDING SHARES (SAFE ADDITION)
-    ===================================================== */
-    const pendingInvites =
-      await inviteModel.findPendingInvitesByEmail(user.email);
+      */
+    const pendingInvites = await inviteModel.findPendingInvitesByEmail(
+      user.email,
+    );
 
     for (const invite of pendingInvites.rows) {
       try {
@@ -51,7 +52,7 @@ exports.register = async (req, res) => {
 
     // cleanup pending invites
     await inviteModel.deletePendingInvitesByEmail(user.email);
-    /* ===================================================== */
+    /*   */
 
     // create email verification OTP (UNCHANGED)
     const otp = await createOtp({
@@ -69,7 +70,7 @@ exports.register = async (req, res) => {
         <p>Your verification OTP is:</p>
         <h1>${otp}</h1>
         <p>This OTP is valid for 10 minutes.</p>
-      `
+      `,
     );
 
     res.status(201).json({
@@ -81,7 +82,6 @@ exports.register = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
-
 
 // RESEND EMAIL VERIFICATION OTP
 exports.sendOtp = async (req, res) => {
@@ -130,14 +130,13 @@ exports.sendOtp = async (req, res) => {
         <p>Your verification OTP is:</p>
         <h2>${otp}</h2>
         <p>This OTP is valid for 10 minutes.</p>
-      `
+      `,
     );
 
     return res.status(200).json({
       success: true,
       message: "Verification OTP sent to email",
     });
-
   } catch (error) {
     console.error("SEND OTP ERROR:", error);
     return res.status(500).json({
@@ -146,7 +145,6 @@ exports.sendOtp = async (req, res) => {
     });
   }
 };
-
 
 // VERIFY EMAIL
 exports.verifyEmail = async (req, res) => {
@@ -288,7 +286,7 @@ exports.forgotPassword = async (req, res) => {
       type: "RESET_PASSWORD",
     });
 
-    const reset_url = `${process.env.FRONTEND_URL}/reset-password?email=${email}`
+    const reset_url = `${process.env.FRONTEND_URL}/reset-password?email=${email}`;
 
     await sendEmail(
       user.email,
@@ -300,7 +298,7 @@ exports.forgotPassword = async (req, res) => {
         <p>Your OTP:</p>
         <h1>${otp}</h1>
         <p>This OTP is valid for 10 minutes.</p>
-      `
+      `,
     );
 
     return res.status(200).json({
