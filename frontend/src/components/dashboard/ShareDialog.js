@@ -20,11 +20,16 @@ import {
   Stack,
   Divider,
   Grid,
+  Checkbox,
+  FormControlLabel,
 } from "@mui/material";
-import { shareResource } from "@/services/share.api";
+import { shareResource, createPublicLink } from "@/services/share.api";
 import toast from "react-hot-toast";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import DeleteIcon from "@mui/icons-material/Delete";
+import LinkIcon from "@mui/icons-material/Link";
+import FileCopyIcon from "@mui/icons-material/FileCopy";
+import LockIcon from "@mui/icons-material/Lock";
 
 const ShareDialog = ({
   open,
@@ -39,6 +44,11 @@ const ShareDialog = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [pendingShares, setPendingShares] = useState([]);
+  const [publicLinkRole, setPublicLinkRole] = useState("VIEWER");
+  const [publicLinkPassword, setPublicLinkPassword] = useState("");
+  const [publicLinkExpiryDays, setPublicLinkExpiryDays] = useState("");
+  const [creatingPublicLink, setCreatingPublicLink] = useState(false);
+  const [publicLinks, setPublicLinks] = useState([]);
 
   const handleShare = async () => {
     if (!email.trim()) {
@@ -93,6 +103,58 @@ const ShareDialog = ({
   const handleRemoveShare = (index) => {
     const updated = pendingShares.filter((_, i) => i !== index);
     setPendingShares(updated);
+  };
+
+  const handleCreatePublicLink = async () => {
+    setCreatingPublicLink(true);
+    setError("");
+
+    try {
+      let expiresAt = null;
+      if (publicLinkExpiryDays) {
+        const expiry = new Date();
+        expiry.setDate(expiry.getDate() + parseInt(publicLinkExpiryDays));
+        expiresAt = expiry.toISOString();
+      }
+
+      const result = await createPublicLink(
+        resourceType,
+        resourceId,
+        publicLinkRole,
+        expiresAt,
+        publicLinkPassword || null,
+      );
+
+      if (result.success) {
+        const fullLink = `${window.location.origin}/public/${result.data.token}`;
+        setPublicLinks([
+          ...publicLinks,
+          {
+            token: result.data.token,
+            link: fullLink,
+            role: publicLinkRole,
+            expiresAt: result.data.expiresAt,
+            hasPassword: !!publicLinkPassword,
+          },
+        ]);
+        toast.success("Public link created successfully");
+        setPublicLinkPassword("");
+        setPublicLinkExpiryDays("");
+      } else {
+        setError(result.message || "Failed to create public link");
+      }
+    } catch (err) {
+      console.error("Public link error:", err);
+      setError(err.response?.data?.message || "Failed to create public link");
+      toast.error("Failed to create public link");
+    } finally {
+      setCreatingPublicLink(false);
+    }
+  };
+
+  const handleCopyLink = (link) => {
+    navigator.clipboard.writeText(link);
+    toast.success("Link copied to clipboard");
   };
 
   const handleKeyPress = (e) => {
@@ -243,6 +305,160 @@ const ShareDialog = ({
               No shares yet
             </Typography>
           )}
+
+          {/* Public Link Section */}
+          <Divider sx={{ my: 3 }} />
+
+          <Box>
+            <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600 }}>
+              <Box display="flex" alignItems="center" gap={1}>
+                <LinkIcon fontSize="small" />
+                Public Link
+              </Box>
+            </Typography>
+
+            {/* Public Link Creation Form */}
+            <Box
+              sx={{
+                mb: 2,
+                p: 1.5,
+                backgroundColor: "#fafafa",
+                borderRadius: 1,
+              }}
+            >
+              <Grid container spacing={1} sx={{ mb: 1.5 }}>
+                <Grid item xs={6}>
+                  <FormControl fullWidth size="small">
+                    <Select
+                      value={publicLinkRole}
+                      onChange={(e) => setPublicLinkRole(e.target.value)}
+                      disabled={creatingPublicLink}
+                    >
+                      <MenuItem value="VIEWER">Viewer</MenuItem>
+                      <MenuItem value="EDITOR">Editor</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={6} sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    type="number"
+                    placeholder="Expires (days)"
+                    value={publicLinkExpiryDays}
+                    onChange={(e) => setPublicLinkExpiryDays(e.target.value)}
+                    disabled={creatingPublicLink}
+                    inputProps={{ min: 1, max: 365 }}
+                  /><span>(days)</span>
+                </Grid>
+              </Grid>
+
+              <TextField
+                fullWidth
+                size="small"
+                type="password"
+                placeholder="Password (optional)"
+                value={publicLinkPassword}
+                onChange={(e) => setPublicLinkPassword(e.target.value)}
+                disabled={creatingPublicLink}
+                sx={{ mb: 1.5 }}
+              />
+
+              <Button
+                fullWidth
+                variant="contained"
+                onClick={handleCreatePublicLink}
+                disabled={creatingPublicLink}
+                startIcon={
+                  creatingPublicLink ? (
+                    <CircularProgress size={20} />
+                  ) : (
+                    <LinkIcon />
+                  )
+                }
+                sx={{
+                  backgroundColor: "var(--color-primary)",
+                  "&:hover": {
+                    backgroundColor: "var(--color-primary-hover)",
+                  },
+                }}
+              >
+                {creatingPublicLink ? "Creating..." : "Generate Link"}
+              </Button>
+            </Box>
+
+            {/* Public Links List */}
+            {publicLinks.length > 0 && (
+              <Box>
+                <Typography
+                  variant="caption"
+                  sx={{ fontWeight: 600, mb: 1, display: "block" }}
+                >
+                  Generated Links ({publicLinks.length})
+                </Typography>
+
+                <Stack spacing={1}>
+                  {publicLinks.map((link, index) => (
+                    <Box
+                      key={index}
+                      sx={{
+                        p: 1.5,
+                        backgroundColor: "#f9f9f9",
+                        borderRadius: 1,
+                        border: "1px solid #e0e0e0",
+                      }}
+                    >
+                      <Box sx={{ mb: 1 }}>
+                        <Box sx={{ display: "flex", gap: 1, mb: 0.5 }}>
+                          <Chip
+                            label={link.role}
+                            size="small"
+                            variant="outlined"
+                            color={link.role === "EDITOR" ? "error" : "default"}
+                          />
+                          {link.hasPassword && (
+                            <Chip
+                              icon={<LockIcon />}
+                              label="Password"
+                              size="small"
+                              variant="outlined"
+                            />
+                          )}
+                          {link.expiresAt && (
+                            <Chip
+                              label={`Expires: ${new Date(link.expiresAt).toLocaleDateString()}`}
+                              size="small"
+                              variant="outlined"
+                            />
+                          )}
+                        </Box>
+                      </Box>
+
+                      <Box
+                        sx={{ display: "flex", gap: 1, alignItems: "center" }}
+                      >
+                        <TextField
+                          fullWidth
+                          size="small"
+                          value={link.link}
+                          disabled
+                          sx={{ flex: 1 }}
+                        />
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          startIcon={<FileCopyIcon />}
+                          onClick={() => handleCopyLink(link.link)}
+                        >
+                          Copy
+                        </Button>
+                      </Box>
+                    </Box>
+                  ))}
+                </Stack>
+              </Box>
+            )}
+          </Box>
         </Box>
       </DialogContent>
 
