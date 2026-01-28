@@ -18,11 +18,12 @@ import CreateFolderDialog from "@/components/dashboard/CreateFolderDialog";
 import ShareDialog from "@/components/dashboard/ShareDialog";
 import StorageUsage from "@/components/dashboard/StorageUsage";
 import FilePreview from "@/components/dashboard/FilePreview";
+import FileVersionHistory from "@/components/dashboard/FileVersionHistory";
 import { RenameDialog } from "@/components/common/RenameDialog";
 import FolderCard from "@/components/dashboard/FolderCard";
 import FileCard from "@/components/dashboard/FileCard";
 import ActionMenu from "@/components/dashboard/ActionMenu";
-import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
+import HourglassEmptyIcon from "@mui/icons-material/HourglassEmpty";
 import Link from "next/link";
 import { useFolders } from "@/hooks/useFolders";
 import { useFiles } from "@/hooks/useFiles";
@@ -47,6 +48,8 @@ export default function DashboardPage() {
   const [renameItem, setRenameItem] = useState(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewFile, setPreviewFile] = useState(null);
+  const [versionHistoryOpen, setVersionHistoryOpen] = useState(false);
+  const [versionHistoryFile, setVersionHistoryFile] = useState(null);
 
   const starredFileIds = new Set(
     starred
@@ -129,6 +132,11 @@ export default function DashboardPage() {
     } else {
       toast.error("File type not supported for preview");
     }
+  };
+
+  const handleVersionHistoryClick = (file) => {
+    setVersionHistoryFile(file);
+    setVersionHistoryOpen(true);
   };
 
   if (foldersLoading || filesLoading) {
@@ -256,6 +264,7 @@ export default function DashboardPage() {
                 onRename={() => handleRenameClick(file)}
                 onShare={() => handleShareClick(file)}
                 onDelete={() => handleDelete(file.id, file.name)}
+                onVersionHistory={() => handleVersionHistoryClick(file)}
                 downloading={downloading}
                 canPreview={canPreview(file.mime_type)}
               />
@@ -324,6 +333,20 @@ export default function DashboardPage() {
           fileId={previewFile.id}
           fileName={previewFile.name}
           mimeType={previewFile.mime_type}
+        />
+      )}
+
+      {/* File Version History Dialog */}
+      {versionHistoryFile && (
+        <FileVersionHistory
+          open={versionHistoryOpen}
+          onClose={() => {
+            setVersionHistoryOpen(false);
+            setVersionHistoryFile(null);
+          }}
+          fileId={versionHistoryFile.id}
+          fileName={versionHistoryFile.name}
+          onRollbackSuccess={handleUploadSuccess}
         />
       )}
     </div>

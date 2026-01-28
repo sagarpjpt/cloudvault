@@ -1,4 +1,5 @@
 const folderModel = require("../models/folder.model");
+const activityModel = require("../models/activity.model");
 
 // CREATE FOLDER
 exports.createFolder = async (req, res) => {
@@ -14,6 +15,20 @@ exports.createFolder = async (req, res) => {
     }
 
     const result = await folderModel.createFolder(name, ownerId, parentId);
+    const folderId = result.rows[0].id;
+
+    // Log activity
+    await activityModel
+      .logActivity({
+        actorId: ownerId,
+        action: "upload",
+        resourceType: "folder",
+        resourceId: folderId,
+        context: {
+          folderName: name,
+        },
+      })
+      .catch((err) => console.error("Activity logging failed:", err));
 
     res.status(201).json({
       success: true,
@@ -137,6 +152,19 @@ exports.deleteFolder = async (req, res) => {
     // Soft delete folder and all its contents recursively
     await folderModel.softDeleteFolderRecursive(folderId);
 
+    // Log activity
+    await activityModel
+      .logActivity({
+        actorId: userId,
+        action: "delete",
+        resourceType: "folder",
+        resourceId: folderId,
+        context: {
+          folderName: folder.name,
+        },
+      })
+      .catch((err) => console.error("Activity logging failed:", err));
+
     res.status(200).json({
       success: true,
       message: "Folder deleted",
@@ -199,6 +227,20 @@ exports.renameFolder = async (req, res) => {
 
     // Update folder name
     const result = await folderModel.updateFolderName(folderId, newName.trim());
+
+    // Log activity
+    await activityModel
+      .logActivity({
+        actorId: userId,
+        action: "rename",
+        resourceType: "folder",
+        resourceId: folderId,
+        context: {
+          oldName: folder.name,
+          newName: newName.trim(),
+        },
+      })
+      .catch((err) => console.error("Activity logging failed:", err));
 
     res.status(200).json({
       success: true,

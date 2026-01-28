@@ -15,6 +15,7 @@ export default function FileCard({
   onRename,
   onShare,
   onDelete,
+  onVersionHistory,
   downloading,
   canPreview,
 }) {
@@ -49,6 +50,14 @@ export default function FileCard({
       label: "Share",
       iconName: "share",
       onClick: onShare,
+    });
+  }
+
+  if (onVersionHistory) {
+    actions.push({
+      label: "Version History",
+      iconName: "history",
+      onClick: onVersionHistory,
     });
   }
 

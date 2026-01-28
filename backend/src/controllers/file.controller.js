@@ -2,6 +2,7 @@ const fileModel = require("../models/file.model");
 const supabase = require("../config/supabase");
 const crypto = require("crypto");
 const fileVersionModel = require("../models/fileVersion.model");
+const activityModel = require("../models/activity.model");
 
 // CREATE FILE METADATA
 exports.createFile = async (req, res) => {
@@ -138,6 +139,22 @@ exports.uploadFile = async (req, res) => {
       checksum,
     });
 
+    // Log activity
+    await activityModel
+      .logActivity({
+        actorId: ownerId,
+        action: "upload",
+        resourceType: "file",
+        resourceId: fileId,
+        context: {
+          fileName: file.originalname,
+          fileSize: file.size,
+          version: versionNumber,
+          mimeType: file.mimetype,
+        },
+      })
+      .catch((err) => console.error("Activity logging failed:", err));
+
     res.status(201).json({
       success: true,
       message: "File uploaded successfully",
@@ -251,6 +268,19 @@ exports.downloadFile = async (req, res) => {
       res.setHeader("Content-Length", dataSize);
     }
 
+    // Log activity
+    await activityModel
+      .logActivity({
+        actorId: userId,
+        action: "download",
+        resourceType: "file",
+        resourceId: fileId,
+        context: {
+          fileName: file.name,
+        },
+      })
+      .catch((err) => console.error("Activity logging failed:", err));
+
     res.send(buffer);
   } catch (err) {
     console.error("DOWNLOAD FILE ERROR:", err);
@@ -300,6 +330,19 @@ exports.deleteFile = async (req, res) => {
 
     // Soft delete (mark as deleted)
     await fileModel.softDeleteFile(fileId);
+
+    // Log activity
+    await activityModel
+      .logActivity({
+        actorId: userId,
+        action: "delete",
+        resourceType: "file",
+        resourceId: fileId,
+        context: {
+          fileName: file.name,
+        },
+      })
+      .catch((err) => console.error("Activity logging failed:", err));
 
     res.status(200).json({
       success: true,
@@ -363,6 +406,20 @@ exports.renameFile = async (req, res) => {
     // Update file name
     const result = await fileModel.updateFileName(fileId, newName.trim());
 
+    // Log activity
+    await activityModel
+      .logActivity({
+        actorId: userId,
+        action: "rename",
+        resourceType: "file",
+        resourceId: fileId,
+        context: {
+          oldName: file.name,
+          newName: newName.trim(),
+        },
+      })
+      .catch((err) => console.error("Activity logging failed:", err));
+
     res.status(200).json({
       success: true,
       message: "File renamed successfully",
@@ -400,6 +457,89 @@ exports.getStorageUsage = async (req, res) => {
     });
   } catch (err) {
     console.error("GET STORAGE USAGE ERROR:", err);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
+
+// ROLLBACK FILE TO PREVIOUS VERSION
+exports.rollbackToVersion = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const fileId = req.params.id;
+    const { versionId } = req.body;
+
+    if (!versionId) {
+      return res.status(400).json({
+        success: false,
+        message: "versionId is required",
+      });
+    }
+
+    // Check if file exists and user owns it
+    const fileResult = await fileModel.findFileById(fileId);
+    if (fileResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "File not found",
+      });
+    }
+
+    const file = fileResult.rows[0];
+
+    // Only owner can rollback
+    if (file.owner_id !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: "Only file owner can rollback",
+      });
+    }
+
+    // Get version details
+    const versionResult = await fileVersionModel.getVersionById(versionId);
+    if (versionResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Version not found",
+      });
+    }
+
+    const version = versionResult.rows[0];
+
+    // Verify version belongs to this file
+    if (version.file_id !== fileId) {
+      return res.status(400).json({
+        success: false,
+        message: "Version does not belong to this file",
+      });
+    }
+
+    // Rollback to version
+    const result = await fileVersionModel.rollbackToVersion(fileId, versionId);
+
+    // Log activity
+    await activityModel
+      .logActivity({
+        actorId: userId,
+        action: "restore",
+        resourceType: "file",
+        resourceId: fileId,
+        context: {
+          fileName: file.name,
+          rollbackToVersion: version.version_number,
+        },
+      })
+      .catch((err) => console.error("Activity logging failed:", err));
+
+    res.status(200).json({
+      success: true,
+      message: `File rolled back to version ${version.version_number}`,
+      data: result.rows[0],
+    });
+  } catch (err) {
+    console.error("ROLLBACK FILE ERROR:", err);
     res.status(500).json({
       success: false,
       message: "Server error",

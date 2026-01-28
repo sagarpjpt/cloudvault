@@ -7,6 +7,7 @@ const publicLinkRoutes = require("./routes/publicLink.routes");
 const inviteRoutes = require("./routes/invite.routes");
 const searchRoutes = require("./routes/search.routes");
 const trashRoutes = require("./routes/trash.routes");
+const activityRoutes = require("./routes/activity.routes");
 require("dotenv").config();
 
 // express app config
@@ -21,7 +22,7 @@ app.use(
   cors({
     origin: `${process.env.FRONTEND_URL}`,
     credentials: true,
-  })
+  }),
 );
 
 app.use("/api/auth", authRoutes);
@@ -32,15 +33,16 @@ app.use("/api/stars", starRoutes);
 app.use("/api/public-links", publicLinkRoutes);
 app.use("/api/search", searchRoutes);
 app.use("/api/trash", trashRoutes);
+app.use("/api/activities", activityRoutes);
 app.use("/invite", inviteRoutes);
-app.use('/api/debug-env', async (req, res) => {
-    res.json({
-        hasVariable: !!process.env.DATABASE_URL,
-        urlLength: process.env.DATABASE_URL?.length || 0,
-        urlPreview: process.env.DATABASE_URL?.substring(0, 60) + '...',
-        allKeys: Object.keys(process.env).filter(k => k.includes('DATABASE'))
-    });
-})
+app.use("/api/debug-env", async (req, res) => {
+  res.json({
+    hasVariable: !!process.env.DATABASE_URL,
+    urlLength: process.env.DATABASE_URL?.length || 0,
+    urlPreview: process.env.DATABASE_URL?.substring(0, 60) + "...",
+    allKeys: Object.keys(process.env).filter((k) => k.includes("DATABASE")),
+  });
+});
 
 // verify server is running
 app.get("/", (req, res) => {

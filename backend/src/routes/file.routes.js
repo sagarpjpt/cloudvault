@@ -10,6 +10,7 @@ const {
   deleteFile,
   renameFile,
   getStorageUsage,
+  rollbackToVersion,
 } = require("../controllers/file.controller");
 const { authMiddleware } = require("../middlewares/auth.middleware");
 const upload = require("../middlewares/upload.middleware");
@@ -23,6 +24,7 @@ router.post("/upload", authMiddleware, upload.single("file"), uploadFile);
 
 router.get("/:id/versions", authMiddleware, getFileVersions);
 router.get("/:id/download", authMiddleware, downloadFile);
+router.post("/:id/rollback", authMiddleware, rollbackToVersion);
 router.patch("/:id", authMiddleware, renameFile);
 router.delete("/:id", authMiddleware, deleteFile);
 

@@ -8,6 +8,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import ShareIcon from "@mui/icons-material/Share";
 import DeleteIcon from "@mui/icons-material/Delete";
 import StarIcon from "@mui/icons-material/Star";
+import HistoryIcon from "@mui/icons-material/History";
 import { IconButton } from "@mui/material";
 
 const iconMap = {
@@ -18,6 +19,7 @@ const iconMap = {
   delete: DeleteIcon,
   unstar: StarIcon,
   star: StarIcon,
+  history: HistoryIcon,
 };
 
 export default function ActionMenu({ actions }) {

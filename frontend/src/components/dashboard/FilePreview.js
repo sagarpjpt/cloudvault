@@ -1,26 +1,32 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import api from "@/lib/axios";
 import {
   Dialog,
   DialogTitle,
   DialogContent,
+  DialogActions,
   Box,
   CircularProgress,
   Alert,
   IconButton,
+  Button,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
+import GetAppIcon from "@mui/icons-material/GetApp";
 
 const FilePreview = ({ open, onClose, fileId, fileName, mimeType }) => {
   const [content, setContent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [fileUrl, setFileUrl] = useState(null);
 
   useEffect(() => {
     if (!open || !fileId) {
       setContent(null);
       setError(null);
+      setFileUrl(null);
       return;
     }
 
@@ -29,39 +35,33 @@ const FilePreview = ({ open, onClose, fileId, fileName, mimeType }) => {
         setLoading(true);
         setError(null);
 
-        const response = await fetch(
-          `http://localhost:4000/api/files/${fileId}/download`,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
-            },
-          },
-        );
+        // Use axios instance which handles auth automatically
+        const response = await api.get(`/files/${fileId}/download`, {
+          responseType: "blob",
+        });
 
-        if (!response.ok) {
-          throw new Error("Failed to load file");
-        }
+        const blob = response.data;
+        const url = URL.createObjectURL(blob);
+        setFileUrl(url);
 
-        if (mimeType.startsWith("image/")) {
-          const blob = await response.blob();
-          const url = URL.createObjectURL(blob);
+        if (mimeType && mimeType.startsWith("image/")) {
           setContent({ type: "image", url });
         } else if (mimeType === "application/pdf") {
-          const blob = await response.blob();
-          const url = URL.createObjectURL(blob);
           setContent({ type: "pdf", url });
         } else if (
-          mimeType.startsWith("text/") ||
-          mimeType === "application/json"
+          mimeType &&
+          (mimeType.startsWith("text/") ||
+            mimeType === "application/json" ||
+            mimeType === "application/xml")
         ) {
-          const text = await response.text();
+          const text = await blob.text();
           setContent({ type: "text", text });
         } else {
           setError("File type not supported for preview");
         }
       } catch (err) {
         console.error("Preview error:", err);
-        setError("Failed to load file preview");
+        setError(err.response?.data?.message || "Failed to load file preview");
       } finally {
         setLoading(false);
       }
@@ -70,14 +70,96 @@ const FilePreview = ({ open, onClose, fileId, fileName, mimeType }) => {
     loadFileContent();
 
     return () => {
-      if (content?.url) {
-        URL.revokeObjectURL(content.url);
+      if (fileUrl) {
+        URL.revokeObjectURL(fileUrl);
       }
     };
   }, [open, fileId, mimeType]);
 
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+          <CircularProgress />
+        </Box>
+      );
+    }
+
+    if (error) {
+      return <Alert severity="error">{error}</Alert>;
+    }
+
+    if (!content) return null;
+
+    if (content.type === "image") {
+      return (
+        <Box sx={{ textAlign: "center", maxHeight: "600px", overflow: "auto" }}>
+          <img
+            src={content.url}
+            alt={fileName}
+            style={{
+              maxWidth: "100%",
+              maxHeight: "600px",
+              objectFit: "contain",
+            }}
+          />
+        </Box>
+      );
+    }
+
+    if (content.type === "pdf") {
+      return (
+        <Box
+          sx={{
+            width: "100%",
+            height: "600px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <iframe
+            src={content.url}
+            style={{
+              width: "100%",
+              height: "100%",
+              border: "none",
+              borderRadius: "4px",
+            }}
+            title={fileName}
+          />
+        </Box>
+      );
+    }
+
+    if (content.type === "text") {
+      return (
+        <Box
+          sx={{
+            backgroundColor: "#f5f5f5",
+            p: 2,
+            borderRadius: 1,
+            fontFamily: "monospace",
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-word",
+            maxHeight: "600px",
+            overflow: "auto",
+            fontSize: "0.875rem",
+          }}
+        >
+          {content.text.slice(0, 10000)}
+          {content.text.length > 10000 && (
+            <Alert severity="info" sx={{ mt: 2 }}>
+              File preview truncated. Showing first 10,000 characters.
+            </Alert>
+          )}
+        </Box>
+      );
+    }
+  };
+
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
       <DialogTitle
         sx={{
           display: "flex",
@@ -99,50 +181,23 @@ const FilePreview = ({ open, onClose, fileId, fileName, mimeType }) => {
           justifyContent: "center",
         }}
       >
-        {loading && <CircularProgress />}
-
-        {error && <Alert severity="error">{error}</Alert>}
-
-        {!loading && !error && content && (
-          <Box sx={{ width: "100%", maxHeight: "70vh", overflow: "auto" }}>
-            {content.type === "image" && (
-              <Box
-                component="img"
-                src={content.url}
-                alt={fileName}
-                sx={{ width: "100%", maxHeight: "70vh", objectFit: "contain" }}
-              />
-            )}
-
-            {content.type === "pdf" && (
-              <iframe
-                src={content.url}
-                style={{ width: "100%", height: "70vh", border: "none" }}
-                title={fileName}
-              />
-            )}
-
-            {content.type === "text" && (
-              <Box
-                sx={{
-                  backgroundColor: "#f5f5f5",
-                  p: 2,
-                  borderRadius: 1,
-                  fontFamily: "monospace",
-                  fontSize: "0.875rem",
-                  whiteSpace: "pre-wrap",
-                  wordBreak: "break-word",
-                  maxHeight: "70vh",
-                  overflow: "auto",
-                  border: "1px solid #e0e0e0",
-                }}
-              >
-                {content.text}
-              </Box>
-            )}
-          </Box>
-        )}
+        {renderContent()}
       </DialogContent>
+
+      <DialogActions>
+        {fileUrl && (
+          <Button
+            href={fileUrl}
+            download={fileName}
+            startIcon={<GetAppIcon />}
+            variant="contained"
+            color="primary"
+          >
+            Download
+          </Button>
+        )}
+        <Button onClick={onClose}>Close</Button>
+      </DialogActions>
     </Dialog>
   );
 };
